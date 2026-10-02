@@ -1,6 +1,6 @@
 use crate::app_state::AppState;
 use crate::entity::{Entity, merge_entities};
-use crate::kuma::get_managed_entities;
+use crate::kuma::{get_managed_entities, resolve_kuma_tags};
 use crate::metrics::{Metrics, entity_type_index};
 use crate::name::{EntitySelector, Name};
 use crate::{
@@ -271,6 +271,8 @@ impl Sync {
             trace!("Got {} entities from source", entities.len());
             new_entities.extend(entities);
         }
+
+        resolve_kuma_tags(&kuma, &mut new_entities).await?;
 
         let to_delete = current_entities
             .iter()

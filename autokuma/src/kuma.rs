@@ -1,10 +1,19 @@
 use crate::{app_state::AppState, entity::Entity, error::Result, util::fill_templates};
 use futures_util::future::join_all;
+use itertools::Itertools;
 use kuma_client::{
-    docker_host::DockerHost, monitor::Monitor, notification::Notification, status_page::StatusPage,
-    tag::TagDefinition, Client,
+    docker_host::DockerHost,
+    monitor::Monitor,
+    notification::Notification,
+    status_page::StatusPage,
+    tag::{Tag, TagDefinition},
+    Client,
 };
+use log::{info, warn};
 use std::collections::HashMap;
+
+/// Color for tags created on demand by `kuma_tags`; can be changed in Uptime Kuma afterwards.
+const DEFAULT_TAG_COLOR: &str = "#4B5563";
 
 pub fn get_kuma_labels(
     state: &AppState,
@@ -184,4 +193,77 @@ pub async fn get_managed_entities(
                 .map(|(id, status_page)| (id, Entity::StatusPage(status_page))),
         )
         .collect::<HashMap<_, _>>())
+}
+
+/// Resolves each monitor's `kuma_tags` (Uptime Kuma tag *names*) into tag ids,
+/// creating tags that don't exist yet. Runs before the diff, so the resolved
+/// tags count as desired state.
+pub async fn resolve_kuma_tags(kuma: &Client, entities: &mut HashMap<String, Entity>) -> Result<()> {
+    let mut known_tags: Option<Vec<TagDefinition>> = None;
+
+    for (id, entity) in entities.iter_mut() {
+        let Entity::Monitor(monitor) = entity else {
+            continue;
+        };
+        let Some(wanted) = monitor.common().kuma_tags().clone() else {
+            continue;
+        };
+
+        let known = match &mut known_tags {
+            Some(known) => known,
+            None => known_tags.insert(kuma.get_tags().await?),
+        };
+
+        for tag in wanted {
+            let matches = known
+                .iter()
+                .filter(|t| t.name.as_deref() == Some(tag.name.as_str()))
+                .filter_map(|t| t.tag_id)
+                .sorted()
+                .collect_vec();
+
+            if matches.len() > 1 {
+                warn!(
+                    "{}: multiple Uptime Kuma tags named '{}', using the oldest (id {})",
+                    id, tag.name, matches[0]
+                );
+            }
+
+            let tag_id = match matches.first() {
+                Some(tag_id) => *tag_id,
+                None => {
+                    let created = kuma
+                        .add_tag(TagDefinition {
+                            tag_id: None,
+                            name: Some(tag.name.clone()),
+                            color: Some(DEFAULT_TAG_COLOR.to_owned()),
+                        })
+                        .await;
+                    match created {
+                        Ok(created) if created.tag_id.is_some() => {
+                            info!("Created tag: {}", tag.name);
+                            let tag_id = created.tag_id.unwrap();
+                            known.push(created);
+                            tag_id
+                        }
+                        other => {
+                            warn!("{}: failed to create tag '{}': {:?}", id, tag.name, other.err());
+                            continue;
+                        }
+                    }
+                }
+            };
+
+            let tags = monitor.common_mut().tags_mut();
+            if !tags.iter().any(|t| t.tag_id == Some(tag_id)) {
+                tags.push(Tag {
+                    tag_id: Some(tag_id),
+                    value: tag.value.clone(),
+                    ..Default::default()
+                });
+            }
+        }
+    }
+
+    Ok(())
 }

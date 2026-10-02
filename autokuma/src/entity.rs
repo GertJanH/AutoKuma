@@ -580,6 +580,7 @@ mod tests {
                 ("name".to_owned(), json!("Test")),
                 ("docker_container".to_owned(), json!("test")),
                 ("docker_host".to_owned(), json!("1")),
+                ("kuma_tags".to_owned(), json!("Containers, Pihole:primary")),
             ],
             &tera::Context::new(),
         )
@@ -593,6 +594,11 @@ mod tests {
             &Some(HashMap::from([("1".to_owned(), true)]))
         );
         assert_eq!(monitor.common().tags()[0].tag_id, Some(2));
+        let kuma_tags = monitor.common().kuma_tags().clone().unwrap();
+        assert_eq!(
+            kuma_tags.iter().map(|t| (t.name.as_str(), t.value.as_deref())).collect_vec(),
+            vec![("Containers", None), ("Pihole", Some("primary"))]
+        );
 
         // Kuma returns the tag with name/color filled in; that must not count as a diff.
         let mut current = monitor.clone();
