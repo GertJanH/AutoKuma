@@ -1086,7 +1086,16 @@ impl Worker {
             .get(
                 self.config
                     .url
-                    .join(&format!("api/status-page/{}", slug))
+                    // Cache-buster: Kuma caches this endpoint for 5 minutes, keyed by the full URL.
+                    // A stale group list saved back could drop monitors or reference deleted ones.
+                    .join(&format!(
+                        "api/status-page/{}?_={}",
+                        slug,
+                        std::time::SystemTime::now()
+                            .duration_since(std::time::UNIX_EPOCH)
+                            .map(|d| d.as_millis())
+                            .unwrap_or_default()
+                    ))
                     .map_err(|e| Error::InvalidUrl(e.to_string()))?,
             )
             .send()

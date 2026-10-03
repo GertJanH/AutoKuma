@@ -1,6 +1,6 @@
 use crate::app_state::AppState;
 use crate::entity::{Entity, merge_entities};
-use crate::kuma::{get_managed_entities, resolve_kuma_tags};
+use crate::kuma::{get_managed_entities, resolve_kuma_tags, sync_status_pages};
 use crate::metrics::{Metrics, entity_type_index};
 use crate::name::{EntitySelector, Name};
 use crate::{
@@ -319,6 +319,8 @@ impl Sync {
                 self.metrics.inc_updated(new);
             }
         }
+
+        sync_status_pages(&self.app_state, &kuma, &new_entities).await?;
 
         if self.app_state.config.on_delete == DeleteBehavior::Delete {
             let delete_at = chrono::Utc::now()

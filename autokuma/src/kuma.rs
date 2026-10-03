@@ -1,16 +1,16 @@
-use crate::{app_state::AppState, entity::Entity, error::Result, util::fill_templates};
+use crate::{app_state::AppState, entity::Entity, error::Result, name::Name, util::fill_templates};
 use futures_util::future::join_all;
 use itertools::Itertools;
 use kuma_client::{
     docker_host::DockerHost,
     monitor::Monitor,
     notification::Notification,
-    status_page::StatusPage,
+    status_page::{PublicGroupMonitor, StatusPage},
     tag::{Tag, TagDefinition},
     Client,
 };
 use log::{info, warn};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 /// Color for tags created on demand by `kuma_tags`; can be changed in Uptime Kuma afterwards.
 const DEFAULT_TAG_COLOR: &str = "#4B5563";
@@ -261,6 +261,107 @@ pub async fn resolve_kuma_tags(kuma: &Client, entities: &mut HashMap<String, Ent
                     value: tag.value.clone(),
                     ..Default::default()
                 });
+            }
+        }
+    }
+
+    Ok(())
+}
+
+/// Adds monitors with `kuma_status_pages` ("slug:Group") to that group of an
+/// existing status page. Add-only: never removes or moves a monitor that is
+/// already anywhere on the page, and only saves a page when something is
+/// missing, so a lost update (e.g. two AutoKuma instances saving the same page)
+/// is simply redone on the next sync.
+// ponytail: reads every referenced page on every sync; cache per page if Kuma load ever matters.
+pub async fn sync_status_pages(
+    state: &AppState,
+    kuma: &Client,
+    entities: &HashMap<String, Entity>,
+) -> Result<()> {
+    let mut wanted: HashMap<String, HashMap<String, Vec<i32>>> = HashMap::new();
+
+    for (id, entity) in entities {
+        let Entity::Monitor(monitor) = entity else {
+            continue;
+        };
+        let Some(refs) = monitor.common().kuma_status_pages() else {
+            continue;
+        };
+        // Not created in Kuma yet: picked up on a later sync.
+        let Some(monitor_id) = state
+            .db
+            .get_id::<i32>(Name::Monitor(id.clone()))
+            .ok()
+            .flatten()
+        else {
+            continue;
+        };
+
+        for page in refs {
+            match &page.value {
+                Some(group) => wanted
+                    .entry(page.name.clone())
+                    .or_default()
+                    .entry(group.clone())
+                    .or_default()
+                    .push(monitor_id),
+                None => warn!(
+                    "{}: kuma_status_pages entry '{}' needs the form 'slug:Group'",
+                    id, page.name
+                ),
+            }
+        }
+    }
+
+    for (slug, groups) in wanted {
+        let mut page: StatusPage = match kuma.get_status_page(&slug).await {
+            Ok(page) => page,
+            Err(e) => {
+                warn!("Unable to read status page '{}': {}", slug, e);
+                continue;
+            }
+        };
+
+        let on_page = page
+            .public_group_list
+            .iter()
+            .flatten()
+            .flat_map(|group| group.monitor_list.iter())
+            .filter_map(|monitor| monitor.id)
+            .collect::<HashSet<_>>();
+
+        let mut changed = false;
+        for (group_name, monitor_ids) in groups {
+            let Some(group) = page
+                .public_group_list
+                .iter_mut()
+                .flatten()
+                .find(|group| group.name.as_deref() == Some(group_name.as_str()))
+            else {
+                warn!(
+                    "Status page '{}' has no group '{}' (create it once in Uptime Kuma)",
+                    slug, group_name
+                );
+                continue;
+            };
+
+            for monitor_id in monitor_ids.into_iter().filter(|id| !on_page.contains(id)) {
+                info!(
+                    "Adding monitor {} to status page {} / {}",
+                    monitor_id, slug, group_name
+                );
+                group.monitor_list.push(PublicGroupMonitor {
+                    id: Some(monitor_id),
+                    ..Default::default()
+                });
+                changed = true;
+            }
+        }
+
+        if changed {
+            if let Err(e) = kuma.edit_status_page(page).await {
+                warn!("Unable to save status page '{}': {}", slug, e);
             }
         }
     }

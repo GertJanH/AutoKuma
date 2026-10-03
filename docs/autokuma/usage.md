@@ -124,6 +124,7 @@ The following properties are handled internally by AutoKuma and are not passed t
 | `notification_name_list` | `["matrix", "discord"]` | AutoKuma IDs of notification providers to enable |
 | `tag_names` | `[{"name": "mytag", "value": "val"}]` | Tags to attach to the monitor |
 | `kuma_tags` | `Containers, Pihole:primary` | Uptime Kuma tags to attach, by their **name in Uptime Kuma** (`name` or `name:value`, comma-separated). A tag that doesn't exist yet is created (grey, color can be changed in Uptime Kuma afterwards); with duplicate names the oldest tag is used. Works in `AUTOKUMA__DEFAULT_SETTINGS` too, but a label replaces the default for the same setting. |
+| `kuma_status_pages` | `containers:Glowstone` | Add the monitor to a group of an **existing** status page (`slug:Group name`, comma-separated for several). Add-only: a monitor that is already anywhere on the page is left alone, nothing is ever removed, and the page is only saved when a monitor is missing. The group must already exist. Meant for `AUTOKUMA__DEFAULT_SETTINGS`, so every new monitor shows up on the page (and its status badge works). |
 | `docker_host_name` | `local_socket` | AutoKuma ID of the Docker host for a docker monitor |
 | `create_paused` | `false` | If `true`, new monitors are added in a paused state |
 

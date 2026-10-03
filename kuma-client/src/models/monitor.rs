@@ -67,6 +67,10 @@ pub trait MonitorCommon {
     fn kuma_tags(&self) -> &Option<Vec<super::tag::TagValue>>;
     #[cfg(feature = "private-api")]
     fn kuma_tags_mut(&mut self) -> &mut Option<Vec<super::tag::TagValue>>;
+    #[cfg(feature = "private-api")]
+    fn kuma_status_pages(&self) -> &Option<Vec<super::tag::TagValue>>;
+    #[cfg(feature = "private-api")]
+    fn kuma_status_pages_mut(&mut self) -> &mut Option<Vec<super::tag::TagValue>>;
 }
 
 /// Invokes a callback macro in item position.
@@ -269,6 +273,20 @@ macro_rules! with_monitor_common_fields_impl {
                         #[cfg(feature = "private-api")]
                     }
                     kuma_tags, Option<Vec<super::tag::TagValue>>
+                ),
+                (
+                    {
+                        // "slug:Group name" pairs; reuses the `name:value` parser of kuma_tags.
+                        #[cfg(feature = "private-api")]
+                        #[serde(rename = "kuma_status_pages")]
+                        #[derivative(PartialEq = "ignore")]
+                        #[derivative(Hash = "ignore")]
+                        #[serde_as(as = "Option<super::tag::DeserializeTagValuesLenient>")]
+                    }
+                    {
+                        #[cfg(feature = "private-api")]
+                    }
+                    kuma_status_pages, Option<Vec<super::tag::TagValue>>
                 ),
                 (
                     {

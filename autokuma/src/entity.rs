@@ -581,6 +581,7 @@ mod tests {
                 ("docker_container".to_owned(), json!("test")),
                 ("docker_host".to_owned(), json!("1")),
                 ("kuma_tags".to_owned(), json!("Containers, Pihole:primary")),
+                ("kuma_status_pages".to_owned(), json!("containers:Glowstone")),
             ],
             &tera::Context::new(),
         )
@@ -598,6 +599,11 @@ mod tests {
         assert_eq!(
             kuma_tags.iter().map(|t| (t.name.as_str(), t.value.as_deref())).collect_vec(),
             vec![("Containers", None), ("Pihole", Some("primary"))]
+        );
+        let pages = monitor.common().kuma_status_pages().clone().unwrap();
+        assert_eq!(
+            (pages[0].name.as_str(), pages[0].value.as_deref()),
+            ("containers", Some("Glowstone"))
         );
 
         // Kuma returns the tag with name/color filled in; that must not count as a diff.

@@ -33,6 +33,15 @@ pub struct PublicGroupMonitor {
     #[derivative(PartialEq = "ignore")]
     #[derivative(Hash = "ignore")]
     pub monitor_type: Option<MonitorType>,
+
+    /// Show the monitor's URL on the status page. Kept so saving a page doesn't reset it.
+    #[serde(rename = "sendUrl")]
+    #[serde_as(as = "Option<DeserializeBoolLenient>")]
+    pub send_url: Option<bool>,
+
+    /// Custom URL shown instead of the monitor's own (only exposed by Kuma when `sendUrl` is set).
+    #[serde(rename = "url")]
+    pub url: Option<String>,
 }
 crate::default_from_serde!(PublicGroupMonitor);
 
