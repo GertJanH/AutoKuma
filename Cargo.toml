@@ -36,7 +36,7 @@ inkjet = { version = "0.11.1", default-features = false, features = [
     "language-yaml",
     "language-json",
 ] }
-itertools = { version = "0.14.0" }
+itertools = { version = "0.15.0" }
 kube = { version = "3.0.1", default-features = false, features = [
     "client",
     "runtime",
@@ -63,7 +63,7 @@ serde-inline-default = { version = "1.0.0" }
 serde_yaml = { version = "0.9.34" }
 schemars = { version = "1.0.4" }
 sled = { version = "0.34.7" }
-unescaper = { version = "0.1.5" }
+unescaper = { version = "0.2.0" }
 shadow-rs = { version = "2.0.0", default-features = false }
 strum = { version = "0.28.0", features = ["derive"] }
 supports-color = { version = "3.0.1" }
