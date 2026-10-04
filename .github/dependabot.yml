@@ -6,6 +6,10 @@ updates:
     directory: /
     schedule:
       interval: monthly
+    ignore:
+      # Must move in lockstep with `kube` (which pins its own k8s-openapi); a lone bump
+      # leaves two versions in the tree and the build fails. Bump both by hand.
+      - dependency-name: k8s-openapi
     groups:
       cargo:
         patterns: ["*"]
