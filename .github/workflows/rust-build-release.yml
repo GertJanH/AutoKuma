@@ -23,12 +23,12 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
       - name: Cache
-        uses: actions/cache@v3
+        uses: actions/cache@v6
         with:
           path: |
             ~/.cargo/bin/
@@ -39,7 +39,7 @@ jobs:
           key: ${{ matrix.runs-on }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Set up Rust
-        uses: dtolnay/rust-toolchain@1.89.0
+        uses: dtolnay/rust-toolchain@1.120.0
 
       - name: Setup NASM
         uses: ilammy/setup-nasm@v1
@@ -70,7 +70,7 @@ jobs:
           done
 
       - name: Archive artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: autokuma-${{ matrix.os }}
           path: dist/*
@@ -82,7 +82,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -96,7 +96,7 @@ jobs:
         uses: coditory/changelog-parser@v1
 
       - name: Download All Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: dist
           pattern: autokuma-*
@@ -104,7 +104,7 @@ jobs:
 
       - name: Create Release
         id: create_release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           name: Release ${{ github.ref_name }}
@@ -119,7 +119,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
