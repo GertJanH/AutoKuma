@@ -26,6 +26,20 @@
 </div>
 
 
+> [!NOTE]
+> **This is a personal fork of [BigBoot/AutoKuma](https://github.com/BigBoot/AutoKuma)**, used for a homelab.
+> The `homelab` branch is upstream plus a few patches and is published as
+> `ghcr.io/gertjanh/autokuma:<upstream version>-homelab.N` (see [Releases](https://github.com/GertJanH/AutoKuma/releases)).
+> For general use, prefer the upstream image `ghcr.io/bigboot/autokuma`.
+>
+> Changes on top of upstream:
+> - Recover from a lost session instead of getting stuck (upstream PR [#196](https://github.com/BigBoot/AutoKuma/pull/196))
+> - No endless notification update loop (upstream PR [#198](https://github.com/BigBoot/AutoKuma/pull/198))
+> - `kuma_tags`: attach existing Uptime Kuma tags by name, creating missing ones
+> - `kuma_status_pages`: add monitors to a group of an existing status page
+>
+> See [`docs/autokuma/usage.md`](docs/autokuma/usage.md) for the new properties.
+
 # AutoKuma 🐻 <a href="https://crates.io/crates/autokuma"><img alt="Crates.io Version" src="https://img.shields.io/crates/v/autokuma?logo=rust&color=blue"></a>
 
 AutoKuma is a utility that automates the creation of Uptime Kuma monitors based on Docker container labels. With AutoKuma, you can eliminate the need for manual monitor creation in the Uptime Kuma UI.
