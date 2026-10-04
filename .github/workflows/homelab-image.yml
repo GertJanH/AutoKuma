@@ -19,6 +19,11 @@ on:
       - homelab
   workflow_dispatch:
 
+# Several pushes in a row (e.g. merging a batch of Dependabot PRs) only build the newest one.
+concurrency:
+  group: homelab-image-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: write
   packages: write
