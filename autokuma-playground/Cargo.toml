@@ -40,4 +40,4 @@ web-sys = { version = "0.3.77", features = [
     "HtmlTextAreaElement",
 ] }
 # Make sure getrandom js feature is enabled for wasm targets
-getrandom = { version = "*", features = ["js"] }
+getrandom = { version = "0.2", features = ["js"] }  # "js" only exists in 0.2
