@@ -18,7 +18,7 @@ This is `GertJanH`'s fork of [BigBoot/AutoKuma](https://github.com/BigBoot/AutoK
 
 Raw Kuma IDs (checked 2026-10-02, no code change needed): notifications via `notification_id_list: {"<id>": true}`, tags via `tags: [{"tag_id": <id>, "value": ...}]` — both work in labels and `AUTOKUMA__DEFAULT_SETTINGS` (test `entity::tests::default_settings_raw_ids`, docs in `docs/autokuma/usage.md`). Status pages had no equivalent (monitors don't reference a status page; a status-page entity owns its whole group list), hence the fork-only `kuma_status_pages` above.
 
-No local `cargo`: run tests in the build image, e.g. `docker run --rm -v "$PWD":/src -w /src rust:1.89 cargo test`. One doctest (`kuma-client/src/client.rs` ~line 1399) fails on upstream too.
+No local `cargo`: run tests in the build image, e.g. `docker run --rm -v "$PWD":/src -w /src rust:<version from Dockerfile, now 1.98> cargo test`. One doctest (`kuma-client/src/client.rs` ~line 1399) fails on upstream too.
 
 ## Commands
 
@@ -32,7 +32,7 @@ cargo test                     # run all tests (few currently exist — config.r
 cargo test -p autokuma <name>  # run a single test by name, scoped to one crate
 ```
 
-Docker images — two separate Dockerfiles, both plain multi-stage `cargo install --path ...` builds against `rust:1.89` onto a `gcr.io/distroless/cc-debian13:debug` base (no special build tooling):
+Docker images — two separate Dockerfiles, both plain multi-stage `cargo install --path ...` builds against `rust:1.98` (Dependabot bumps it) onto a `gcr.io/distroless/cc-debian13:debug` base (no special build tooling):
 
 ```bash
 docker build -t autokuma .                 # Dockerfile: both `autokuma` + `kuma` CLI binaries, the production image
