@@ -1,10 +1,11 @@
 name: Homelab image
 
-# Builds the `homelab` branch into ghcr.io/<owner>/autokuma:homelab-<run number>
-# and creates a matching GitHub release, which Renovate shows as release notes.
-# Deliberately not tag-triggered: upstream's own workflows run on tags and would
-# try to publish to ghcr.io/bigboot. The release tag below is created with
-# GITHUB_TOKEN, which doesn't trigger other workflows.
+# Builds the `homelab` branch into ghcr.io/<owner>/autokuma:<upstream version>-homelab.<run number>
+# (e.g. 2.1.0-rc.2-homelab.6) and creates a matching GitHub release, which Renovate shows as
+# release notes. Pull requests (e.g. Dependabot) only get a build check, nothing is published.
+# Deliberately not tag-triggered: upstream's own workflows run on tags and would try to publish
+# to ghcr.io/bigboot. The release tag below is created with GITHUB_TOKEN, which doesn't trigger
+# other workflows.
 on:
   push:
     branches:
@@ -13,6 +14,9 @@ on:
     paths-ignore:
       - "**.md"
       - "docs/**"
+  pull_request:
+    branches:
+      - homelab
   workflow_dispatch:
 
 permissions:
@@ -22,38 +26,45 @@ permissions:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    env:
+      PUBLISH: ${{ github.event_name != 'pull_request' }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
+      - id: version
+        run: |
+          base=$(git describe --tags --match 'v[0-9]*' --abbrev=0 | sed 's/^v//')
+          echo "tag=${base}-homelab.${{ github.run_number }}" >> "$GITHUB_OUTPUT"
+          echo "image=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/autokuma" >> "$GITHUB_OUTPUT"
+
       - uses: docker/setup-buildx-action@v3
 
       - uses: docker/login-action@v3
+        if: env.PUBLISH == 'true'
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - id: image
-        run: echo "name=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/autokuma" >> "$GITHUB_OUTPUT"
-
       - uses: docker/build-push-action@v5
         with:
           context: .
           platforms: linux/amd64
-          push: true
-          tags: ${{ steps.image.outputs.name }}:homelab-${{ github.run_number }}
+          push: ${{ env.PUBLISH == 'true' }}
+          tags: ${{ steps.version.outputs.image }}:${{ steps.version.outputs.tag }}
           labels: org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
       - name: Create release
+        if: env.PUBLISH == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: homelab-${{ github.run_number }}
+          TAG: ${{ steps.version.outputs.tag }}
         run: |
-          prev=$(git tag -l 'homelab-*' --sort=-v:refname | head -n1)
+          prev=$(git tag -l '*homelab*' --sort=-creatordate | head -n1)
           {
             if [ -n "$prev" ] && git merge-base --is-ancestor "$prev" HEAD; then
               echo "## Changes since $prev"

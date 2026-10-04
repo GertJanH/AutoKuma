@@ -1,0 +1,22 @@
+# Upstream is quiet, so keep the fork's dependencies current ourselves. Targets the default
+# branch (`homelab`); a merged PR builds a new image that Renovate rolls out.
+version: 2
+updates:
+  - package-ecosystem: cargo
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      cargo:
+        patterns: ["*"]
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: monthly
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns: ["*"]
