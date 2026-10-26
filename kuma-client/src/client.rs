@@ -786,6 +786,11 @@ impl Worker {
         };
         #[cfg(feature = "private-api")]
         let tag_names = mem::take(monitor.common_mut().tag_names_mut());
+        // Kuma's `add` stores every key it gets, so the fork-only fields must not reach it.
+        #[cfg(feature = "private-api")]
+        let kuma_tags = mem::take(monitor.common_mut().kuma_tags_mut());
+        #[cfg(feature = "private-api")]
+        let kuma_status_pages = mem::take(monitor.common_mut().kuma_status_pages_mut());
 
         let id: i32 = self
             .clone()
@@ -811,6 +816,8 @@ impl Worker {
                 docker_monitor.docker_host_name = docker_host_name;
             }
             *monitor.common_mut().tag_names_mut() = tag_names;
+            *monitor.common_mut().kuma_tags_mut() = kuma_tags;
+            *monitor.common_mut().kuma_status_pages_mut() = kuma_status_pages;
         }
 
         self.update_monitor_tags(id, &tags).await?;
