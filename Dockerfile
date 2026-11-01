@@ -1,6 +1,6 @@
 ARG FEATURES=
 
-FROM rust:1.98 AS builder
+FROM rust:1.99 AS builder
 ARG FEATURES
 ARG TARGETARCH
 WORKDIR /usr/src/autokuma
