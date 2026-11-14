@@ -10,6 +10,10 @@ updates:
       # Must move in lockstep with `kube` (which pins its own k8s-openapi); a lone bump
       # leaves two versions in the tree and the build fails. Bump both by hand.
       - dependency-name: k8s-openapi
+      # Majors (tera 2, kube 4, dirs 7, ...) need code changes and broke the grouped build
+      # (#10); do those by hand, or once upstream moves.
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
     groups:
       cargo:
         patterns: ["*"]
